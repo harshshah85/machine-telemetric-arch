@@ -118,7 +118,7 @@
 
 <h3>How the Deep Link Works</h3>
 <div class="step"><div class="step-num">1</div><div><strong>NBO Engine runs</strong> — reads Gold layer (urgency score, wear%, fault severity, component compatibility) and ranks recommended parts for each machine.</div></div>
-<div class="step"><div class="step-num">2</div><div><strong>Contract Pricing API called</strong> — NBO Engine calls Adobe Commerce REST API (<code>GET /V1/products/{sku}/pricing?customer_group={tier}</code>) for each top-ranked part to retrieve live contract price for this customer's tier.</div></div>
+<div class="step"><div class="step-num">2</div><div><strong>Contract Pricing API called</strong> — NBO Engine calls Adobe Commerce REST API (<code>GET /rest/V1/products/{sku}/tier-prices?customer_group_id={group_id}</code>) for each top-ranked part to retrieve live contract price for this customer's tier.</div></div>
 <div class="step"><div class="step-num">3</div><div><strong>Deep link constructed</strong> — NBO Engine builds a signed deep link URL that encodes the Adobe Commerce cart payload. URL is signed with HMAC-SHA256 to prevent tampering.</div></div>
 <div class="step"><div class="step-num">4</div><div><strong>NBO payload delivered to Member Portal</strong> — Portal renders NBO widget with part cards showing urgency badge, part name, compatibility, and contract price.</div></div>
 <div class="step"><div class="step-num">5</div><div><strong>Customer clicks Add to Cart</strong> — Browser follows deep link to Adobe Commerce. Commerce validates HMAC, creates pre-populated cart with the specified SKU, quantity, and customer's contract price applied automatically.</div></div>
