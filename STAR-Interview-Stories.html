@@ -66,7 +66,7 @@
     <div class="star-section">
       <div class="star-label s-label">SITUATION</div>
       <div class="star-content">
-        I was the Lead Solutions Architect on the Komatsu machine telemetry integration project at Northwestern Mutual — a program to migrate <span class="fill">[number]</span> Komatsu machines from legacy on-prem telematics to Palantir Foundry and surface machine health recommendations through a Member Portal. The program had hard dependencies: a parts sales team expecting NBO-driven revenue in a defined quarter, a data engineering team that had never worked with Foundry before, and an MDM system owned by a separate team that would need to be the canonical data source for machine identities.
+        I was the Lead Solutions Architect on a machine telemetry integration program for a large heavy-equipment manufacturer — a program to migrate <span class="fill">[number]</span> machines from legacy on-prem telematics to Palantir Foundry and surface machine health recommendations through a Member Portal. The program had hard dependencies: a parts sales team expecting NBO-driven revenue in a defined quarter, a data engineering team that had never worked with Foundry before, and an MDM system owned by a separate team that would need to be the canonical data source for machine identities.
 
         The critical decision was around how to design the Foundry Ontology — specifically, whether to design the full Ontology upfront and populate it incrementally, or to build it bottom-up as data pipelines matured. Both the data engineering team and the product team had strong opposing opinions, and neither approach had a clear precedent in our organization.
       </div>
@@ -131,7 +131,7 @@
     <div class="star-section">
       <div class="star-label s-label">SITUATION</div>
       <div class="star-content">
-        At Northwestern Mutual, I was the Lead Solutions Architect on a program that required tight integration between three teams that reported to different VPs: the Data Platform team (who owned Palantir Foundry), the Digital Products team (who owned the Member Portal), and the Parts Sales team (who set the NBO business requirements). None of these teams reported to me. Each team had their own roadmap, sprint cadence, and definition of "done."
+        I was the Lead Solutions Architect on a program that required tight integration between three teams that reported to different VPs: the Data Platform team (who owned Palantir Foundry), the Digital Products team (who owned the Member Portal), and the Parts Sales team (who set the NBO business requirements). None of these teams reported to me. Each team had their own roadmap, sprint cadence, and definition of "done."
 
         The conflict point: the Parts Sales team wanted NBO recommendations live within <span class="fill">[quarter]</span>. The Data Platform team said they couldn't commit to Gold layer data quality until <span class="fill">[X months later]</span>. The Digital Products team was blocked on NBO until Gold was ready. All three teams were technically correct — and collectively, we were heading toward a <span class="fill">[X month]</span> slip.
       </div>
@@ -194,11 +194,7 @@
     <div class="star-section">
       <div class="star-label s-label">SITUATION</div>
       <div class="star-content">
-        <span class="fill">[Choose one of these two options based on which is more accurate to your experience:]</span>
-
-        <strong>Option A (NM context):</strong> During the Palantir Foundry data platform work at NM, there was pressure from a senior business stakeholder to skip the Silver layer and push data directly from Bronze to the Ontology to save 6 weeks of pipeline development time. The argument was that the data coming from legacy systems was "already clean enough." I had reviewed the source data and knew this wasn't true — there were null rates, unit inconsistencies, and duplicate events that would produce incorrect health scores and generate false NBO recommendations.
-
-        <strong>Option B (Architecture governance context):</strong> <span class="fill">[Or use a different situation from your NM experience where you held a technical position against pressure — e.g., cloud vendor choice, API design, security control.]</span>
+        During the Palantir Foundry data platform build, there was pressure from a senior business stakeholder to skip the Silver layer and push data directly from Bronze to the Ontology to save 6 weeks of pipeline development time. The argument was that the data coming from legacy systems was "already clean enough." I had reviewed the source data and knew this wasn't true — there were null rates, unit inconsistencies, and duplicate events that would produce incorrect health scores and generate false NBO recommendations.
       </div>
     </div>
 
@@ -258,7 +254,7 @@
     <div class="star-section">
       <div class="star-label s-label">SITUATION</div>
       <div class="star-content">
-        The Komatsu machine telemetry program was the most technically complex program I've led. The goal: migrate <span class="fill">[number]</span> Komatsu construction machines from <span class="fill">[legacy system]</span> to a Palantir Foundry-based telemetry platform, and use the telemetry data to drive NBO parts recommendations to customers through a Member Portal, with an integration to Adobe Commerce for order fulfillment.
+        The machine telemetry program was the most technically complex program I've led. The goal: migrate <span class="fill">[number]</span> heavy-equipment assets from <span class="fill">[legacy system]</span> to a Palantir Foundry-based telemetry platform, and use the telemetry data to drive NBO parts recommendations to customers through a Member Portal, with an integration to Adobe Commerce for order fulfillment.
 
         The complexity: four organizational teams (Data Engineering, Data Modeling, Digital Products, Parts Sales), two external platforms (Palantir Foundry and Adobe Commerce) neither of which our team had production experience with, an MDM system owned by a third-party team that was on a different release cadence, and a hard delivery commitment <span class="fill">[describe the business constraint — e.g., tied to a customer contract, a fiscal year target, a product launch]</span>.
 
@@ -332,7 +328,7 @@
     <div class="star-section">
       <div class="star-label s-label">SITUATION</div>
       <div class="star-content">
-        When I joined the Komatsu telemetry program at Northwestern Mutual, there was no established data modeling practice for Palantir Foundry. <span class="fill">[X]</span> engineers on the data team had strong traditional data warehouse skills — dimensional modeling, SQL, ETL — but no one had worked with Foundry's Ontology model before. The business expected a production Ontology in <span class="fill">[X months]</span>. We had neither the skills nor a methodology to build it.
+        When I joined the machine telemetry program, there was no established data modeling practice for Palantir Foundry. <span class="fill">[X]</span> engineers on the data team had strong traditional data warehouse skills — dimensional modeling, SQL, ETL — but no one had worked with Foundry's Ontology model before. The business expected a production Ontology in <span class="fill">[X months]</span>. We had neither the skills nor a methodology to build it.
 
         More broadly, there was no architecture review culture — technical decisions were made within each team's sprint, with no cross-team visibility until something broke at an integration point. The program needed not just a delivered Ontology, but a team that could own, evolve, and govern it independently after I moved on.
       </div>
@@ -395,11 +391,7 @@
     <div class="star-section">
       <div class="star-label s-label">SITUATION</div>
       <div class="star-content">
-        <span class="fill">[Choose from one of these two framings based on which fits your actual experience better:]</span>
-
-        <strong>Option A — NM Insurance context:</strong> At Northwestern Mutual, I was making the case for a significant investment in Palantir Foundry's data platform as the foundation for the Komatsu telemetry program. The business sponsor — <span class="fill">[role, e.g., VP of Parts Sales / Head of Fleet Services]</span> — had approved the program goal (NBO-driven parts revenue) but was deeply skeptical of the platform approach. Their view: "We've bought expensive data platforms before and they took 18 months before anyone got any value. Why is this different?" This was a legitimate concern based on lived experience, not an unfair objection.
-
-        <strong>Option B — Governance context:</strong> <span class="fill">[Or use an NM insurance/retirement context where you had to convince a business leader — e.g., a line of business VP — to accept a phased delivery approach, adopt a new API standard, or invest in a data quality initiative before building the feature they wanted.]</span>
+        At Northwestern Mutual, I was making the case for a significant investment in Palantir Foundry as the data platform for a personalized financial guidance capability — using advisor-client interaction and financial planning data to surface the right product recommendations to advisors at the right moment in a client relationship. The business sponsor — the Head of Advisor Distribution Technology — had approved the program goal (higher advisor productivity and deeper client engagement) but was deeply skeptical of the platform approach. Their view: "We've bought expensive data platforms before and they took 18 months before anyone got any value. Why is this different?" This was a legitimate concern based on lived experience, not an unfair objection.
       </div>
     </div>
 
@@ -425,7 +417,7 @@
     <div class="star-section">
       <div class="star-label r-label">RESULT</div>
       <div class="star-content">
-        The 90-day milestone was hit: <span class="fill">[describe the first concrete deliverable — e.g., "dealer received the first real-time engine fault alert for a Komatsu machine on day 73"]</span>. The business sponsor attended the demo and <span class="fill">[reaction — e.g., "extended full program approval the following week"]</span>.
+        The 90-day milestone was hit: <span class="fill">[describe the first concrete deliverable — e.g., "the first cohort of advisors received personalized client engagement recommendations via the portal on day X"]</span>. The business sponsor attended the demo and <span class="fill">[reaction — e.g., "extended full program approval the following week"]</span>.
 
         The data quality dashboard became a standing item in the quarterly business review. <span class="fill">[Add: "By Month 6, the stakeholder was using the dashboard proactively to ask the data team questions — a 180-degree shift from 'I don't trust your data' to 'walk me through what these null rates mean.'"]</span>
 
@@ -460,7 +452,7 @@
     <div class="star-section">
       <div class="star-label s-label">SITUATION</div>
       <div class="star-content">
-        Multi-year technical programs succeed or fail on the strength of the relationships between the technology team and the business stakeholders who fund and use them. The Komatsu telemetry program spanned <span class="fill">[X years / quarters]</span> with <span class="fill">[X]</span> business stakeholders across Parts Sales, Fleet Services, and Customer Experience. Over that time, priorities shifted, budgets were questioned, and at least once, <span class="fill">[describe a moment when the program was at risk — e.g., "a budget review threatened to pause Phase 2 investment"]</span>.
+        Multi-year technical programs succeed or fail on the strength of the relationships between the technology team and the business stakeholders who fund and use them. The machine telemetry program spanned <span class="fill">[X years / quarters]</span> with <span class="fill">[X]</span> business stakeholders across Parts Sales, Fleet Services, and Customer Experience. Over that time, priorities shifted, budgets were questioned, and at least once, <span class="fill">[describe a moment when the program was at risk — e.g., "a budget review threatened to pause Phase 2 investment"]</span>.
 
         The relationship I'm most proud of is with <span class="fill">[role — e.g., "the VP of Parts Sales / Head of Fleet Services"]</span>, who started the program as a skeptic and ended as the program's most vocal internal sponsor.
       </div>
@@ -514,7 +506,7 @@
   <tr><td>Influencing without authority — technical teams</td><td>Story 2 (cross-team alignment)</td><td>Story 4 (dependency board)</td></tr>
   <tr><td>Influencing without authority — business stakeholders</td><td>Story 6 (skeptical business sponsor)</td><td>Story 2 (scoped NBO launch)</td></tr>
   <tr><td>Disagreeing with a leader</td><td>Story 3 (Silver layer pushback)</td><td>Story 1 (MDM canonical key controversy)</td></tr>
-  <tr><td>Leading a complex program</td><td>Story 4 (Komatsu telemetry program)</td><td>Story 2 (scoped NBO launch)</td></tr>
+  <tr><td>Leading a complex program</td><td>Story 4 (machine telemetry program)</td><td>Story 2 (scoped NBO launch)</td></tr>
   <tr><td>Leadership / building a team or capability</td><td>Story 5 (building data modeling practice)</td><td>Story 4 (architecture cross-team sync)</td></tr>
   <tr><td>Business relationship building</td><td>Story 7 (sustained business partnership)</td><td>Story 6 (winning over skeptic)</td></tr>
   <tr><td>Decision with incomplete information</td><td>Story 1 (Ontology-first vs. bottom-up)</td><td>Story 3 (data quality risk quantification)</td></tr>
