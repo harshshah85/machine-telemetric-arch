@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>STAR Interview Stories — CAT Principal Digital Architect</title>
+<style>
+  body { font-family: Arial, sans-serif; font-size: 13px; margin: 40px; color: #222; background: #fff; }
+  h1 { color: #1a1a2e; font-size: 22px; border-bottom: 3px solid #e63946; padding-bottom: 8px; margin-top: 40px; }
+  h2 { color: #457b9d; font-size: 15px; margin: 6px 0 20px 0; }
+  h3 { color: #1a1a2e; font-size: 13px; margin: 18px 0 8px 0; font-weight: bold; }
+  .page-break { page-break-before: always; }
+  .cover { text-align: center; padding: 60px 0 40px 0; }
+  .cover h1 { border: none; font-size: 28px; }
+  .note { background: #fffbe6; border-left: 4px solid #f4c542; padding: 10px 14px; margin: 16px 0; font-size: 12px; }
+  .fill { background: #fff0f0; border: 1px dashed #e63946; border-radius: 4px; padding: 2px 6px; font-style: italic; color: #e63946; }
+  .story { border: 1px solid #ddd; border-radius: 10px; margin: 20px 0; overflow: hidden; }
+  .story-header { background: #1a1a2e; color: white; padding: 16px 20px; }
+  .story-header h2 { color: #a8dadc; margin: 0 0 4px 0; font-size: 16px; }
+  .story-header p { margin: 0; font-size: 11px; color: #8b949e; }
+  .story-body { padding: 0 20px 20px; }
+  .star-section { margin: 14px 0; }
+  .star-label { display: inline-block; border-radius: 6px; padding: 4px 12px; font-size: 11px; font-weight: bold; color: white; margin-bottom: 8px; }
+  .s-label { background: #e63946; }
+  .t-label { background: #f4a261; }
+  .a-label { background: #2a9d8f; }
+  .r-label { background: #457b9d; }
+  .q-label { background: #6d3fa0; }
+  .star-content { font-size: 13px; line-height: 1.7; color: #333; padding: 10px 14px; background: #f9f9f9; border-radius: 6px; }
+  .question-box { background: #1a1a2e; color: #a8dadc; border-radius: 8px; padding: 12px 16px; margin: 16px 0 0 0; font-size: 12px; }
+  .question-box strong { color: white; }
+  .tips { background: #eef8f5; border-left: 4px solid #2a9d8f; padding: 12px 16px; margin: 12px 0; font-size: 12px; border-radius: 0 6px 6px 0; }
+  .tips strong { color: #2a9d8f; }
+  ul { margin: 6px 0; padding-left: 20px; }
+  li { margin: 4px 0; }
+</style>
+</head>
+<body>
+
+<div class="cover">
+  <h1>STAR Interview Stories</h1>
+  <p style="font-size:16px;color:#457b9d;">CAT Principal Digital Architect — Behavioral Interview Preparation</p>
+  <p style="color:#999;font-size:11px;">Harsh Shah &nbsp;|&nbsp; May 2026</p>
+</div>
+
+<div class="note">
+  <strong>How to use this document:</strong> Each story is structured using the STAR format (Situation → Task → Action → Result). Sections marked <span class="fill">like this</span> need your specific numbers, dates, or details — the framework is drawn from your known background but you must fill in exact metrics to make it credible. Rehearse each story until it flows conversationally in under 3 minutes.
+</div>
+
+<!-- ════════════════════════════════════
+     STORY 1: TELEMETRY PLATFORM ARCHITECTURE DECISION
+════════════════════════════════════ -->
+<div class="story">
+  <div class="story-header">
+    <h2>Story 1 — Complex Architecture Decision Under Ambiguity</h2>
+    <p>Competency: Technical leadership · Decision-making with incomplete information · Stakeholder trade-off management</p>
+  </div>
+  <div class="story-body">
+
+    <div class="question-box">
+      <strong>Questions this story answers:</strong><br>
+      "Tell me about the most complex architecture decision you've made and how you approached it."<br>
+      "Describe a time you had to make a major technical decision without complete information."<br>
+      "Walk me through a situation where multiple stakeholders had conflicting technical preferences."
+    </div>
+
+    <div class="star-section">
+      <div class="star-label s-label">SITUATION</div>
+      <div class="star-content">
+        I was the Lead Solutions Architect on the Komatsu machine telemetry integration project at Northwestern Mutual — a program to migrate <span class="fill">[number]</span> Komatsu machines from legacy on-prem telematics to Palantir Foundry and surface machine health recommendations through a Member Portal. The program had hard dependencies: a parts sales team expecting NBO-driven revenue in a defined quarter, a data engineering team that had never worked with Foundry before, and an MDM system owned by a separate team that would need to be the canonical data source for machine identities.
+
+        The critical decision was around how to design the Foundry Ontology — specifically, whether to design the full Ontology upfront and populate it incrementally, or to build it bottom-up as data pipelines matured. Both the data engineering team and the product team had strong opposing opinions, and neither approach had a clear precedent in our organization.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label t-label">TASK</div>
+      <div class="star-content">
+        My job was to make the architecture call, get alignment from both teams, and ensure we didn't build ourselves into a corner that would force a painful refactor 12 months later. I had about two weeks before we needed to commit to a data model direction to stay on track with the program timeline. The stakes were high — the wrong choice would either mean consuming applications couldn't be built in parallel (delaying the Portal by 6+ months) or we'd end up with an Ontology that didn't reflect business needs because it was shaped by the data we happened to have, not the decisions we needed to make.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label a-label">ACTION</div>
+      <div class="star-content">
+        I ran a structured architecture decision process over two weeks:
+
+        <ul>
+          <li><strong>Stakeholder mapping first:</strong> I identified who would be blocked if the Ontology wasn't ready (Member Portal team, NBO Engine team) and who needed stable Silver data before they could populate objects (Data Engineering). I mapped their dependencies visually so each team could see why the other team's concern was legitimate.</li>
+          <li><strong>Two-phase decision:</strong> Rather than choosing one approach, I proposed a hybrid: design the complete Ontology contract on paper in Sprint 1 (Ontology-first), commit to the field names, types, and link shapes — but only populate Machine and Alert objects in the first six months (incremental). Consuming teams could build against the contract while Data Engineering built the pipelines to fill it.</li>
+          <li><strong>Formalized it as an Architecture Decision Record (ADR):</strong> I wrote the ADR with the decision, the options considered, the rationale, and critically — the constraints that would cause us to revisit it. I walked both teams through it in a joint session, not separate sessions, so objections were visible to everyone.</li>
+          <li><strong>MDM as canonical key:</strong> One unresolved question was machine identity across systems. I made the explicit call that MDM keys would be canonical Ontology IDs — any telemetry event with an unresolved serial number would be quarantined, not ingested. This was contentious (data engineers worried about data loss) but I held the position because building a graph on ambiguous identities creates downstream problems that are almost impossible to fix.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label r-label">RESULT</div>
+      <div class="star-content">
+        The Member Portal team started building against the Ontology contract within 3 weeks of the decision — before a single Silver pipeline was running. When the first Silver datasets went live <span class="fill">[X weeks]</span> later, the Portal had a working integration on day one rather than needing a retrofit period.
+
+        The quarantine approach for unresolved serial numbers caught <span class="fill">[X%]</span> of early telemetry events from machines that weren't yet in MDM — those would have created orphaned objects in the Ontology that would have been very costly to clean up. The quarantine allowed us to recover those events once MDM was updated rather than losing them.
+
+        <span class="fill">[Add: specific outcome metric — e.g., "We delivered the Member Portal MVP X weeks ahead of the original bottom-up estimate" or "The architecture supported onboarding 3 additional machine models in Year 2 without any Ontology redesign."]</span>
+      </div>
+    </div>
+
+    <div class="tips">
+      <strong>Delivery tips:</strong> Emphasize the structured process (not gut instinct), the ADR as an artifact, and the MDM key decision as a non-obvious call you held under pressure. The CAT interviewer will likely probe: "How did you handle the data engineering team's pushback on the quarantine approach?" — prepare that answer.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     STORY 2: INFLUENCING WITHOUT AUTHORITY
+════════════════════════════════════ -->
+<div class="page-break"></div>
+<div class="story">
+  <div class="story-header">
+    <h2>Story 2 — Influencing Without Authority</h2>
+    <p>Competency: Cross-functional leadership · Stakeholder alignment · Driving change without direct reports</p>
+  </div>
+  <div class="story-body">
+
+    <div class="question-box">
+      <strong>Questions this story answers:</strong><br>
+      "Tell me about a time you influenced a technical decision when you didn't have direct authority."<br>
+      "Describe a situation where you had to align teams with different priorities."<br>
+      "How do you get buy-in from teams who report to different leaders?"
+    </div>
+
+    <div class="star-section">
+      <div class="star-label s-label">SITUATION</div>
+      <div class="star-content">
+        At Northwestern Mutual, I was the Lead Solutions Architect on a program that required tight integration between three teams that reported to different VPs: the Data Platform team (who owned Palantir Foundry), the Digital Products team (who owned the Member Portal), and the Parts Sales team (who set the NBO business requirements). None of these teams reported to me. Each team had their own roadmap, sprint cadence, and definition of "done."
+
+        The conflict point: the Parts Sales team wanted NBO recommendations live within <span class="fill">[quarter]</span>. The Data Platform team said they couldn't commit to Gold layer data quality until <span class="fill">[X months later]</span>. The Digital Products team was blocked on NBO until Gold was ready. All three teams were technically correct — and collectively, we were heading toward a <span class="fill">[X month]</span> slip.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label t-label">TASK</div>
+      <div class="star-content">
+        My task was to unblock the program without having authority over any of the three teams, and without asking any VP to override their team's assessment — because that approach tends to create resentment and surface-level compliance rather than genuine alignment.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label a-label">ACTION</div>
+      <div class="star-content">
+        <ul>
+          <li><strong>Reframed the dependency chain:</strong> I ran a dependency mapping session with all three teams in the room. I put the timeline on a whiteboard and showed visually how each team's "blocker" was actually only blocking specific features — not the entire NBO launch. The Digital Products team didn't need Gold for all 12 domains — they needed Gold for Engine and DPF, the two highest-urgency domains. The Data Platform team could commit to those two domains by the original date.</li>
+          <li><strong>Negotiated a scoped definition of "done":</strong> I worked with the Parts Sales team to agree that NBO for 2 domains with 5 parts was a meaningful MVP — not a compromise, but an early signal of platform value. This shifted the conversation from "we're delayed" to "we're doing a controlled rollout."</li>
+          <li><strong>Built a shared artifact:</strong> I created a dependency matrix that all three teams co-owned — it showed which portal features depended on which Gold datasets. Any team could update it. It replaced three separate status decks with one shared view, which meant the VPs in each organization were looking at the same picture in steering committee.</li>
+          <li><strong>Informal 1:1s before the formal meeting:</strong> Before any group session, I met 1:1 with the lead from each team to understand their real concerns (not their stated positions). The Data Platform lead's real concern was being held accountable for data quality before the pipeline was mature — not the Gold timeline per se. Knowing that let me propose a formal data quality sign-off gate rather than a subjective "Gold is ready" milestone.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label r-label">RESULT</div>
+      <div class="star-content">
+        We launched NBO for Engine and DPF domains on the original committed date with <span class="fill">[X]</span> parts recommendations. The scoped launch gave the Parts Sales team a live conversion signal within <span class="fill">[X weeks]</span>. The Data Platform team had a clear quality gate they controlled, which meant no surprise "this data isn't ready" conversation at launch.
+
+        The broader program roadmap was re-baselined with the phased approach and <span class="fill">[outcome — e.g., "was approved by steering committee without requiring additional budget or timeline extension."]</span>
+
+        What I learned: when cross-functional programs stall, it's almost never because the technology is hard. It's because each team is optimizing for their own accountability boundary. Reframing shared accountability — through joint artifacts and scoped milestones — is usually more effective than escalation.
+      </div>
+    </div>
+
+    <div class="tips">
+      <strong>Delivery tips:</strong> The closing reflection ("what I learned") is important — Principal-level candidates are expected to demonstrate meta-awareness about why things work or don't work. Don't skip it.
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     STORY 3: TECHNICAL DISAGREEMENT / HOLDING A POSITION
+════════════════════════════════════ -->
+<div class="page-break"></div>
+<div class="story">
+  <div class="story-header">
+    <h2>Story 3 — Holding a Technical Position Under Pressure</h2>
+    <p>Competency: Technical courage · Executive communication · Data-driven decision making</p>
+  </div>
+  <div class="story-body">
+
+    <div class="question-box">
+      <strong>Questions this story answers:</strong><br>
+      "Describe a time you disagreed with a technical direction — what did you do?"<br>
+      "Tell me about a time you had to push back on a stakeholder or senior leader."<br>
+      "Have you ever been overruled on an architecture decision? How did you handle it?"
+    </div>
+
+    <div class="star-section">
+      <div class="star-label s-label">SITUATION</div>
+      <div class="star-content">
+        <span class="fill">[Choose one of these two options based on which is more accurate to your experience:]</span>
+
+        <strong>Option A (NM context):</strong> During the Palantir Foundry data platform work at NM, there was pressure from a senior business stakeholder to skip the Silver layer and push data directly from Bronze to the Ontology to save 6 weeks of pipeline development time. The argument was that the data coming from legacy systems was "already clean enough." I had reviewed the source data and knew this wasn't true — there were null rates, unit inconsistencies, and duplicate events that would produce incorrect health scores and generate false NBO recommendations.
+
+        <strong>Option B (Architecture governance context):</strong> <span class="fill">[Or use a different situation from your NM experience where you held a technical position against pressure — e.g., cloud vendor choice, API design, security control.]</span>
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label t-label">TASK</div>
+      <div class="star-content">
+        My task was to either accept the shortcut (which would save 6 weeks now and likely cost months of credibility-damaging data quality incidents later) or hold my position — knowing that pushing back on a senior stakeholder who had budget authority over the program was a career risk in an organization where "getting to yes" was culturally rewarded.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label a-label">ACTION</div>
+      <div class="star-content">
+        <ul>
+          <li><strong>Made it a business risk conversation, not a technical one:</strong> Rather than defending Silver as an architectural principle, I quantified what "clean enough" meant. I pulled a sample of <span class="fill">[X thousand]</span> Bronze records and ran the proposed Gold logic against them. The result: <span class="fill">[X%]</span> of machine health scores would be incorrect — either artificially healthy (missing fault signals due to nulls) or artificially critical (duplicate events double-counting wear signals). I turned this into a one-pager: "If we ship without Silver, X% of NBO recommendations for high-urgency parts will be wrong in this direction, and Y% in that direction."</li>
+          <li><strong>Proposed a middle path that didn't require abandoning Silver:</strong> I proposed parallelizing Silver development and Portal development rather than skipping Silver. If the Portal team started building against a Bronze-backed synthetic Gold dataset (for dev/testing), they wouldn't be blocked for the 6 weeks. Silver could be developed in parallel. This preserved the architecture and addressed the schedule concern.</li>
+          <li><strong>Was direct about the long-term cost:</strong> I told the stakeholder explicitly: "If we skip Silver and launch, we will spend the following 3 months investigating why dealers are complaining that recommendations are wrong. That investigation cost will exceed the 6 weeks we're trying to save. I can take the schedule risk off the table through parallelization — what I can't do is take the credibility risk off the table if we skip the quality layer."</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label r-label">RESULT</div>
+      <div class="star-content">
+        The stakeholder agreed to the parallel development approach. Silver was completed <span class="fill">[X days/weeks]</span> after the original schedule — well within the window that parallelization had bought. The Portal launched with Silver-backed Gold data.
+
+        <span class="fill">[Add specific outcome: "In the 90 days post-launch, we had zero data quality escalations from dealers." OR "The data quality audit post-launch confirmed that null rates in Silver were X% — validating the concern that Bronze-direct would have caused significant errors."]</span>
+
+        What I took from this: holding a technical position is not the same as being inflexible. The key was making the risk visible in business terms and offering an alternative rather than just saying "no." A technical "no" without an alternative is obstruction. A technical "no" with a path forward is leadership.
+      </div>
+    </div>
+
+    <div class="tips">
+      <strong>Delivery tips:</strong> The closing insight is your strongest signal. "Making risk visible in business terms" is Principal-level thinking. Interviewers will probe: "What would you have done if they said no to parallelization too?" — prepare an answer (likely: document the decision, escalate once, then execute while maintaining a rollback plan).
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     STORY 4: PROGRAM LEADERSHIP / COMPLEX DELIVERY
+════════════════════════════════════ -->
+<div class="page-break"></div>
+<div class="story">
+  <div class="story-header">
+    <h2>Story 4 — Leading a Complex Multi-Team Technical Program</h2>
+    <p>Competency: Program leadership · Organizational navigation · Technical depth at scale</p>
+  </div>
+  <div class="story-body">
+
+    <div class="question-box">
+      <strong>Questions this story answers:</strong><br>
+      "Tell me about the most complex technical program you've led."<br>
+      "How do you manage delivery across multiple teams with different priorities?"<br>
+      "What's the hardest thing you've had to deliver and what made it hard?"
+    </div>
+
+    <div class="star-section">
+      <div class="star-label s-label">SITUATION</div>
+      <div class="star-content">
+        The Komatsu machine telemetry program was the most technically complex program I've led. The goal: migrate <span class="fill">[number]</span> Komatsu construction machines from <span class="fill">[legacy system]</span> to a Palantir Foundry-based telemetry platform, and use the telemetry data to drive NBO parts recommendations to customers through a Member Portal, with an integration to Adobe Commerce for order fulfillment.
+
+        The complexity: four organizational teams (Data Engineering, Data Modeling, Digital Products, Parts Sales), two external platforms (Palantir Foundry and Adobe Commerce) neither of which our team had production experience with, an MDM system owned by a third-party team that was on a different release cadence, and a hard delivery commitment <span class="fill">[describe the business constraint — e.g., tied to a customer contract, a fiscal year target, a product launch]</span>.
+
+        My involvement: I was not the program manager. I was the Lead Solutions Architect — responsible for the end-to-end technical architecture, cross-team API contracts, and the data model that connected all the pieces. I also filled the role of informal technical lead across all four teams because no single team owned the full picture.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label t-label">TASK</div>
+      <div class="star-content">
+        Design an architecture that could be built incrementally by four teams in parallel without blocking each other. Define the integration contracts (API specs, Ontology schema, data quality agreements) that allowed parallel development. And do this while learning Palantir Foundry's Ontology model in real-time — none of us had production experience with it going in.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label a-label">ACTION</div>
+      <div class="star-content">
+        <ul>
+          <li><strong>Architecture first, implementation second:</strong> I spent the first <span class="fill">[X weeks]</span> on architecture only — no code. Produced an L1/L2 diagram set, the full Ontology design (all objects and link types, even those we wouldn't populate until later phases), and API contracts for the Machine Domain APIs. These artifacts became the shared language across all four teams.</li>
+          <li><strong>Interface contracts as the unlock:</strong> Once the Ontology contract was stable, the Digital Products team could build the Portal against a mock implementation. The NBO Engine team could write recommendation logic against stub Gold data. Data Engineering could build pipelines without needing Portal or NBO to be ready. The contracts decoupled the teams.</li>
+          <li><strong>I owned the data model, not the pipelines:</strong> I was explicit about scope boundaries. I owned the Silver and Gold schema design and the Ontology — but the pipeline implementation was Data Engineering's domain. I reviewed their Bronze→Silver transforms against the schema contract but didn't write them. This kept me in the right architectural role without becoming a bottleneck.</li>
+          <li><strong>Weekly cross-team sync with a shared dependency board:</strong> I ran a weekly 45-minute cross-team architecture sync — not a status meeting, but a "dependencies and blockers" meeting. Each team brought one dependency they needed resolved. I facilitated resolution or escalation. This replaced a dozen bilateral Slack threads with one visible forum.</li>
+          <li><strong>Learned Palantir in real-time:</strong> I spent <span class="fill">[X hours/week]</span> in the Palantir documentation and on calls with Palantir PS to understand the Ontology model's constraints before we designed into them. The key learning that shaped the architecture: Foundry Ontology object IDs must be stable — you can't change the primary key after data is loaded. That single constraint drove the MDM-as-canonical-key decision.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label r-label">RESULT</div>
+      <div class="star-content">
+        <span class="fill">[Fill in with real outcomes — suggested structure:]</span>
+
+        We delivered the Member Portal MVP with NBO recommendations for <span class="fill">[X domains / Y parts]</span> on <span class="fill">[date/quarter]</span>. The phased architecture meant that <span class="fill">[X additional domains]</span> were added in subsequent quarters without requiring any architectural redesign.
+
+        <span class="fill">[Add at least one business outcome: e.g., "In the first 90 days, NBO-driven parts orders represented X% of digital parts revenue." OR "Alert-to-work-order time dropped from X days to Y days."]</span>
+
+        <span class="fill">[Add one learning: e.g., "The single thing I would do differently: I would have formalized the MDM integration pattern with the MDM team 4 weeks earlier. The quarantine rate in the first month was higher than expected because MDM didn't have all serial numbers registered — we lost 3 weeks of telemetry history for those machines."]</span>
+      </div>
+    </div>
+
+    <div class="tips">
+      <strong>Delivery tips:</strong>
+      <ul>
+        <li>This story is long — practice the 3-minute version (hit Situation, one Action point, and Result). The interviewer will ask follow-up questions for the rest.</li>
+        <li>When asked "what was the hardest part?" — answer: "Learning the Foundry Ontology constraints in real-time while designing the data model. The stable primary key constraint isn't obvious until you've read the documentation carefully — and getting that wrong would have required a full data reload 6 months into the program."</li>
+        <li>When asked "what would you do differently?" — use the MDM learning above. It shows you think about root causes, not just surface issues.</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- PREP MATRIX -->
+<div class="page-break"></div>
+<h1>Quick Reference — Story-to-Question Matrix</h1>
+
+<table>
+  <tr><th>Interview Question Theme</th><th>Primary Story</th><th>Backup Story</th></tr>
+  <tr><td>Complex architecture decision</td><td>Story 1 (Ontology design decision)</td><td>Story 4 (program architecture)</td></tr>
+  <tr><td>Influencing without authority</td><td>Story 2 (cross-team alignment)</td><td>Story 4 (dependency board)</td></tr>
+  <tr><td>Disagreeing with a leader</td><td>Story 3 (Silver layer pushback)</td><td>Story 1 (MDM canonical key controversy)</td></tr>
+  <tr><td>Leading a complex program</td><td>Story 4 (Komatsu telemetry program)</td><td>Story 2 (scoped NBO launch)</td></tr>
+  <tr><td>Decision with incomplete information</td><td>Story 1 (Ontology-first vs. bottom-up)</td><td>Story 3 (data quality risk quantification)</td></tr>
+  <tr><td>Technical risk management</td><td>Story 3 (Silver skip risk)</td><td>Story 1 (MDM quarantine design)</td></tr>
+  <tr><td>What you'd do differently</td><td>Story 4 (MDM timing)</td><td>Story 2 (shared artifact earlier)</td></tr>
+  <tr><td>"Tell me about yourself" / opening</td><td>Story 4 (use as the anchor narrative for your experience)</td><td></td></tr>
+</table>
+
+<div class="note" style="margin-top:20px;">
+  <strong>Final prep checklist before the interview:</strong>
+  <ul style="margin:8px 0 0 20px;line-height:2;">
+    <li>Fill in all <span class="fill">[FILL IN]</span> sections with specific numbers, dates, and outcomes</li>
+    <li>Rehearse each story out loud — not reading, not in your head — actually speaking it</li>
+    <li>Time yourself: each story should be deliverable in 2.5–3 minutes without rushing</li>
+    <li>Prepare the "follow-up" answers for each story (the likely probe questions noted in Delivery Tips)</li>
+    <li>Have one "failure story" ready: a project that didn't go as planned, what you learned, what you'd do differently — interviewers often ask this and candidates without one appear to lack self-awareness</li>
+  </ul>
+</div>
+
+<br><br><hr>
+<p style="text-align:center;color:#999;font-size:11px;">STAR Interview Stories — CAT Principal Digital Architect &nbsp;|&nbsp; Harsh Shah &nbsp;|&nbsp; May 2026 &nbsp;|&nbsp; Confidential</p>
+</body>
+</html>
