@@ -589,16 +589,107 @@ Year 1/2: this path does not exist. Full hourly batch only.
 Year 3: on-demand path runs alongside hourly batch — batch remains the
         source of truth for all non-critical domains.</div>
 
-<h3>What Is Real-Time vs Pre-Computed — Summary</h3>
+<h3>NBA Serving Architecture — Fully Pre-Computed, No Live Call</h3>
+<div class="section-intro">
+  NBA recommendations follow the same batch-precompute pattern as NBO but are simpler at the serve layer: there is no live external call. Everything the portal needs — action type, urgency, machine context, dealer routing — is already in the <code>NbaRecommendation</code> Ontology object. The portal reads it directly and renders the action card in under 200ms.
+</div>
+<div class="object-box">══════════════════════════════════════════════════════════════════════
+  NBA PRECOMPUTE LAYER (Foundry — hourly batch)
+══════════════════════════════════════════════════════════════════════
+
+  [/gold/engine_health]──┐
+  [/gold/dpf_health]─────┤
+  [/gold/hydraulics_*]───┤──► NBA Scoring Transform
+  [/gold/workorder_*]────┤        │  Evaluates action thresholds
+  [/gold/dealer_routing]─┘        │  Selects action type (SCHEDULE_SERVICE,
+                                  │  SEND_TECHNICIAN, OPERATOR_COACHING, etc.)
+                                  │  Routes to correct dealer
+                                  ▼
+                    [/gold/nba_recommendations]  ← Pre-computed store
+                                  │
+                                  ▼ (Ontology population, ~10 min lag)
+                    NbaRecommendation objects in Foundry Ontology
+
+══════════════════════════════════════════════════════════════════════
+  NBA SERVE LAYER (Machine Domain API — per request, target p95 &lt; 200ms)
+══════════════════════════════════════════════════════════════════════
+
+  Dealer Portal / Member Portal
+        │
+        ▼
+  Machine Domain API
+        │
+        └─ Read NbaRecommendation objects from Ontology  [~30ms]
+           (fully pre-computed — NO external call at serve time)
+                │
+                ▼
+        Portal renders action card:
+          "Schedule hydraulic service — estimated failure in 18 days"
+          [Schedule Service] button → creates work order in DMS</div>
+
+<h3>/gold/nba_recommendations Schema</h3>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Description</th></tr>
+  <tr><td><code>machine_serial_number</code></td><td>String (PK, part 1)</td><td>Canonical MDM serial number</td></tr>
+  <tr><td><code>rank</code></td><td>Integer (PK, part 2)</td><td>1 = highest priority action. One row per machine per recommended action.</td></tr>
+  <tr><td><code>action_type</code></td><td>String</td><td>SCHEDULE_SERVICE / SEND_TECHNICIAN / OPERATOR_COACHING / FLUID_CHECK / INSPECT_NOW</td></tr>
+  <tr><td><code>action_urgency</code></td><td>String</td><td>IMMEDIATE / WITHIN_7_DAYS / WITHIN_30_DAYS / MONITOR</td></tr>
+  <tr><td><code>action_reason</code></td><td>String</td><td>Human-readable reason shown in portal — e.g., "Hydraulic pressure dropping 12% below baseline over 30 days"</td></tr>
+  <tr><td><code>assigned_dealer_id</code></td><td>String</td><td>Pre-computed dealer routing — which dealer should receive the service request</td></tr>
+  <tr><td><code>estimated_failure_days</code></td><td>Integer (nullable)</td><td>Predicted days until component failure — null if not calculable (insufficient history)</td></tr>
+  <tr><td><code>telemetry_domain</code></td><td>String</td><td>Source domain driving the action (ENGINE, HYDRAULICS, UNDERCARRIAGE, etc.)</td></tr>
+  <tr><td><code>nba_suppressed</code></td><td>Boolean</td><td>True if action already in progress — open work order for this machine and component type</td></tr>
+  <tr><td><code>scored_at</code></td><td>Timestamp</td><td>When the scoring batch ran</td></tr>
+  <tr><td><code>valid_until</code></td><td>Timestamp</td><td><code>scored_at + 25 hours</code> — same staleness window as NBO</td></tr>
+</table>
+
+<h3>NBA Closed Loop — Dealer Management System (DMS) Webhook</h3>
+<div class="object-box">Dealer accepts service action in portal
+        │
+        ▼  [Schedule Service] button → Machine Domain API
+Machine Domain API creates work order in DMS
+        │
+        ▼  DMS webhook → Foundry on service events
+  Event 1 — Work Order Created:
+    └─ Update NbaRecommendation → status = IN_PROGRESS
+    └─ Suppress re-recommendation (open work order rule)
+
+  Event 2 — Service Completed (dealer confirms in DMS):
+    └─ Update WorkOrder object — completion_date, technician, cost
+    └─ Update Component object — reset health_score, wear_%
+    └─ Update NbaRecommendation → status = COMPLETED
+    └─ Log to /gold/service_history → feeds failure prediction retraining
+
+  Event 3 — Work Order Cancelled / No Show:
+    └─ Update NbaRecommendation → status = CANCELLED
+    └─ Re-enable recommendation on next batch run (suppression lifted)</div>
+
+<h3>NBO vs NBA — Serving Architecture Side-by-Side</h3>
+<table>
+  <tr><th></th><th>NBO (Next Best Offer)</th><th>NBA (Next Best Action)</th></tr>
+  <tr><td><b>Pre-computed store</b></td><td><code>/gold/nbo_recommendations</code></td><td><code>/gold/nba_recommendations</code></td></tr>
+  <tr><td><b>Ontology object</b></td><td><code>NboRecommendation</code></td><td><code>NbaRecommendation</code></td></tr>
+  <tr><td><b>Live call at serve time</b></td><td>Yes — Adobe Commerce pricing (rank 1, ~150ms)</td><td>None — fully pre-computed</td></tr>
+  <tr><td><b>Target p95 serve latency</b></td><td>&lt; 400ms (includes pricing call)</td><td>&lt; 200ms (Ontology read only)</td></tr>
+  <tr><td><b>Portal action</b></td><td>Signed deep link → Adobe Commerce cart</td><td>Schedule Service → DMS work order creation</td></tr>
+  <tr><td><b>Primary consumer</b></td><td>Customer / fleet manager (buy parts)</td><td>Dealer / service technician (do service)</td></tr>
+  <tr><td><b>Closed loop source</b></td><td>Adobe Commerce order confirmed webhook</td><td>DMS service completion webhook</td></tr>
+  <tr><td><b>Suppression trigger</b></td><td>Part ordered or replaced within 30 days</td><td>Open work order exists for this machine + component</td></tr>
+  <tr><td><b>Staleness window</b></td><td>0–60 min (hourly batch); 25hr expiry</td><td>0–60 min (hourly batch); 25hr expiry</td></tr>
+  <tr><td><b>Year 3 on-demand re-score</b></td><td>Yes — CRITICAL fault triggers immediate re-score</td><td>Yes — CRITICAL fault triggers immediate re-score; dealer also notified via push alert</td></tr>
+</table>
+
+<h3>What Is Real-Time vs Pre-Computed — Full Summary</h3>
 <table>
   <tr><th>Component</th><th>Computed When</th><th>Latency to Portal</th><th>Stale Risk</th></tr>
   <tr><td>Machine fault alert (Engine/DPF)</td><td>Streaming — on event arrival</td><td>&lt;90 sec (streaming SLO)</td><td>None — event-sourced</td></tr>
   <tr><td>Machine overall health score</td><td>Batch — hourly Gold transform</td><td>0–60 min lag</td><td>Up to 60 min</td></tr>
   <tr><td>NBO part recommendations (rank 1–5)</td><td>Batch — hourly NBO scoring job</td><td>0–60 min lag</td><td>Up to 60 min (25hr expiry)</td></tr>
-  <tr><td>NBA service recommendations</td><td>Batch — hourly NBA scoring job</td><td>0–60 min lag</td><td>Up to 60 min</td></tr>
-  <tr><td>Adobe Commerce contract price (rank 1)</td><td>Live at serve time</td><td>&lt;150ms (15min cache)</td><td>15 min (cache TTL)</td></tr>
-  <tr><td>Adobe Commerce contract price (ranks 2–5)</td><td>Live on user expand (lazy)</td><td>&lt;150ms on demand</td><td>15 min (cache TTL)</td></tr>
-  <tr><td>On-demand NBO re-score (Year 3, CRITICAL only)</td><td>Event-triggered on CRITICAL fault</td><td>&lt;30 sec end-to-end</td><td>None for CRITICAL faults</td></tr>
+  <tr><td>NBA service recommendations</td><td>Batch — hourly NBA scoring job</td><td>0–60 min lag</td><td>Up to 60 min (25hr expiry)</td></tr>
+  <tr><td>Adobe Commerce price — NBO rank 1</td><td>Live at serve time (NBO only)</td><td>&lt;150ms (15min cache)</td><td>15 min (cache TTL)</td></tr>
+  <tr><td>Adobe Commerce price — NBO ranks 2–5</td><td>Live on user expand, lazy (NBO only)</td><td>&lt;150ms on demand</td><td>15 min (cache TTL)</td></tr>
+  <tr><td>DMS work order creation (NBA)</td><td>Live on dealer action (NBA only)</td><td>Synchronous on button click</td><td>N/A — write operation</td></tr>
+  <tr><td>On-demand NBO/NBA re-score (Year 3)</td><td>Event-triggered on CRITICAL fault</td><td>&lt;30 sec end-to-end</td><td>None for CRITICAL faults</td></tr>
 </table>
 
 <br><br>
