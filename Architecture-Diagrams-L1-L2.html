@@ -331,9 +331,10 @@
   <text x="385" y="639" fill="white" font-size="9" text-anchor="middle">Rate limiting · Auth validation</text>
 
   <rect x="508" y="584" width="190" height="70" rx="8" fill="#457b9d" filter="url(#sh2)"/>
-  <text x="603" y="608" fill="white" font-size="12" font-weight="bold" text-anchor="middle">Redis Cache</text>
-  <text x="603" y="624" fill="white" font-size="10" text-anchor="middle">Health scores · NBO results</text>
-  <text x="603" y="639" fill="white" font-size="9" text-anchor="middle">TTL: 5–15 min per object</text>
+  <text x="603" y="606" fill="white" font-size="12" font-weight="bold" text-anchor="middle">Redis Cache</text>
+  <text x="603" y="621" fill="white" font-size="9" text-anchor="middle">Rate-limit counters (distributed)</text>
+  <text x="603" y="634" fill="white" font-size="9" text-anchor="middle">Shared pricing cache (cross-instance)</text>
+  <text x="603" y="647" fill="white" font-size="9" text-anchor="middle">Pricing TTL: 15 min · Rate window: 1 min</text>
 
   <rect x="722" y="584" width="228" height="70" rx="8" fill="#457b9d" filter="url(#sh2)"/>
   <text x="836" y="608" fill="white" font-size="12" font-weight="bold" text-anchor="middle">Notification Service</text>
@@ -484,6 +485,18 @@
   <text x="820" y="618" fill="#e63946" font-size="9" text-anchor="middle">CRITICAL</text>
 
 </svg>
+</div>
+
+<!-- ═══════════════════════════════════════════
+     L2 DESIGN NOTES
+════════════════════════════════════════════ -->
+<div class="note" style="margin-top:20px;">
+  <strong>Design Note — Redis scope:</strong> Redis in this architecture has a narrowly defined role. It is <em>not</em> a general response cache for NBO/NBA payloads or machine health scores — those are pre-computed in Foundry Gold and served directly from the Ontology at ~30ms, making a response cache redundant. Redis serves two specific purposes:
+  <ol style="margin:8px 0 0 20px; line-height:2;">
+    <li><strong>Distributed rate-limit counters</strong> — the API Gateway enforces a per-<code>client_id</code> rate limit (P1 alert threshold: &gt;100 machine reads/min). With multiple API Gateway instances under load, in-memory counters would only see each instance's share of traffic and miss the aggregate threshold. Redis provides a shared sliding-window counter across all instances.</li>
+    <li><strong>Shared Adobe Commerce pricing cache</strong> — the Machine Domain API caches contract pricing per <code>{sku}:{customer_group_id}</code> with a 15-minute TTL. In a single-instance deployment this is an in-memory cache. In a multi-instance production deployment, Redis elevates this to a shared cache so a cache warm on instance A benefits instances B and C — avoiding redundant Adobe Commerce calls across the fleet.</li>
+  </ol>
+  Redis does <em>not</em> cache: NBO/NBA recommendation payloads, machine health scores, Ontology object data, or session tokens (session management is delegated to the Identity Provider / Okta).
 </div>
 
 <!-- ═══════════════════════════════════════════
