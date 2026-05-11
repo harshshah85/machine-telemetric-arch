@@ -43,6 +43,9 @@
   <ol>
     <li>Foundry Architecture Overview</li>
     <li>Data Refinement, Ownership & Enrichment</li>
+    <li>Code Repository — Engineering Deep Dive</li>
+    <li>Pipeline Builder — Visual Transform Tool</li>
+    <li>Schema Contracts & Data Quality Expectations</li>
     <li>Ontology Object Model</li>
     <li>Domain Alignment: Engine</li>
     <li>Domain Alignment: Fuel & Emissions (DPF/DEF)</li>
@@ -441,8 +444,331 @@ def compute_engine_health(silver, oem, workorders):
   The Data Modeling team defined the schema contracts that Data Engineering had to conform to when delivering Silver datasets. This meant: field names, data types, units, and null-handling rules were specified upfront. If the Silver output didn't match the contract, the Silver → Gold pipeline would reject it — preventing bad data from reaching the portal or NBO engine.
 </div>
 
-<!-- SECTION 3 -->
-<h1>3. Ontology Object Model</h1>
+<!-- CODE REPOSITORY DEEP DIVE -->
+<div class="page-break"></div>
+<h1>3. Code Repository — Engineering Deep Dive</h1>
+<div class="section-intro">
+  Foundry Code Repository is the production-grade tool for all enrichment pipelines. It is a Git-backed environment where transforms are written in Python (or Java/Scala), version-controlled, built via Foundry CI, and executed on managed Spark compute. Pipeline Builder is used for simple joins and filters; Code Repository is used for everything complex.
+</div>
+
+<h2>Repository Structure</h2>
+<div class="object-box">my-telemetry-transforms/
+├── transforms-python/
+│   ├── src/
+│   │   └── mypackage/
+│   │       ├── __init__.py
+│   │       └── transforms/
+│   │           ├── bronze_to_silver/
+│   │           │   ├── engine_clean.py
+│   │           │   ├── dpf_clean.py
+│   │           │   └── hydraulics_clean.py
+│   │           ├── silver_to_gold/
+│   │           │   ├── engine_health.py
+│   │           │   ├── nbo_scoring.py
+│   │           │   └── urgency_score.py
+│   │           └── reference/
+│   │               └── mdm_sync.py
+│   ├── conda_recipe.yaml          ← Python dependencies
+│   └── build.gradle               ← Foundry build config
+└── README.md
+
+Each .py file = one transform function (one input dataset → one output dataset).
+Multiple transforms can share utility functions via __init__.py imports.</div>
+
+<h2>@transform_df vs @transform — When to Use Which</h2>
+<table>
+  <tr><th>Decorator</th><th>What It Returns</th><th>When to Use</th><th>Limitation</th></tr>
+  <tr><td><b>@transform_df</b></td><td>Returns a Spark DataFrame — Foundry writes the output dataset automatically</td><td>Majority of transforms. Clean, concise. Best for full-recompute pipelines.</td><td>Cannot do incremental processing — always reads full input dataset</td></tr>
+  <tr><td><b>@transform</b></td><td>Low-level — gives you <code>TransformInput</code> and <code>TransformOutput</code> objects, full control over read/write</td><td>Incremental processing (read only new partitions), custom write modes, file-level access, or when you need multiple output datasets</td><td>More verbose. Requires explicit <code>output.write_dataframe(df)</code> call.</td></tr>
+</table>
+
+<h3>@transform_df — Standard Full Recompute</h3>
+<div class="object-box">from transforms.api import transform_df, Input, Output
+from pyspark.sql import functions as F
+
+@transform_df(
+    output=Output("/silver/engine_telemetry_cleaned"),
+    raw=Input("/bronze/engine_telemetry_raw"),
+    mdm=Input("/reference/mdm_machine_registry"),
+)
+def clean_engine_telemetry(raw, mdm):
+    """Bronze → Silver: clean, validate, join MDM keys."""
+    return (
+        raw
+        # Step 1: Drop structural nulls (no serial = unusable row)
+        .filter(F.col("machine_id").isNotNull())
+        # Step 2: Deduplicate — take latest event per machine per minute
+        .withColumn("_rank", F.row_number().over(
+            Window.partitionBy("machine_id", F.window("event_ts", "1 minute"))
+                  .orderBy(F.col("event_ts").desc())
+        ))
+        .filter(F.col("_rank") == 1).drop("_rank")
+        # Step 3: Normalize units (raw values are mixed °F/°C, psi/kPa)
+        .withColumn("coolant_temp_c",
+            F.when(F.col("temp_unit") == "F",
+                (F.col("coolant_temp_raw") - 32) * 5 / 9
+            ).otherwise(F.col("coolant_temp_raw")))
+        .withColumn("oil_pressure_kpa",
+            F.when(F.col("pressure_unit") == "PSI",
+                F.col("oil_pressure_raw") * 6.895
+            ).otherwise(F.col("oil_pressure_raw")))
+        # Step 4: Join MDM to resolve canonical serial number
+        .join(mdm.select("machine_id", "serial_number", "machine_model"),
+              on="machine_id", how="left")
+        # Step 5: Quarantine rows with no MDM match (serial stays null → filtered downstream)
+        .withColumn("mdm_resolved", F.col("serial_number").isNotNull())
+    )</div>
+
+<h3>@transform — Incremental Processing (Engine/DPF Streaming Path)</h3>
+<div class="object-box">from transforms.api import transform, Input, Output, incremental
+
+@incremental()
+@transform(
+    output=Output("/silver/engine_streaming_cleaned"),
+    source=Input("/bronze/engine_telemetry_raw"),
+)
+def process_incremental(ctx, source, output):
+    """
+    Incremental mode: only process partitions added since last build.
+    Foundry tracks the high-water mark — no custom state management needed.
+    """
+    if ctx.is_incremental:
+        # Read only newly-added data (Foundry resolves the delta automatically)
+        new_data = source.dataframe(ctx, "added")
+    else:
+        # First build or full recompute — read everything
+        new_data = source.dataframe(ctx)
+
+    cleaned = new_data.filter(F.col("machine_id").isNotNull())
+    # ... transform logic ...
+    output.write_dataframe(cleaned)</div>
+
+<h2>Compute Profiles — Spark Sizing Inside Foundry</h2>
+<div class="section-intro">
+  Foundry manages Spark cluster provisioning. You select a compute profile via a decorator — you do not configure individual driver/executor settings. Profiles map to pre-defined cluster shapes.
+</div>
+<table>
+  <tr><th>Profile Name</th><th>Driver</th><th>Executors</th><th>When to Use</th></tr>
+  <tr><td><code>DRIVER_MEMORY_EXTRA_LARGE</code></td><td>64 GB RAM, 8 cores</td><td>Auto-scale</td><td>Large joins, broad aggregations (e.g., Silver → Gold across all 12 domains)</td></tr>
+  <tr><td><code>DRIVER_MEMORY_LARGE</code></td><td>32 GB RAM, 4 cores</td><td>Auto-scale</td><td>Default for most Bronze → Silver transforms</td></tr>
+  <tr><td><code>DRIVER_MEMORY_MEDIUM</code> (default)</td><td>16 GB RAM, 4 cores</td><td>Auto-scale</td><td>Simple filters, deduplication, reference dataset joins</td></tr>
+  <tr><td><code>SHUFFLE_OPTIMIZED</code></td><td>Medium driver</td><td>High executor count, more shuffle memory</td><td>Wide transforms with heavy groupBy/join shuffle — e.g., NBO urgency scoring across all machines</td></tr>
+  <tr><td><code>KUBERNETES_NO_CACHE</code></td><td>Standard</td><td>Standard</td><td>Force a clean build without Spark shuffle cache — use when debugging stale output</td></tr>
+</table>
+
+<div class="object-box">from transforms.api import transform_df, Input, Output, configure
+
+@configure(profile=["DRIVER_MEMORY_EXTRA_LARGE"])
+@transform_df(
+    output=Output("/gold/nbo_urgency_scores"),
+    engine=Input("/gold/engine_health"),
+    dpf=Input("/gold/dpf_health"),
+    hydraulics=Input("/gold/hydraulics_health"),
+    workorders=Input("/gold/workorder_history"),
+)
+def compute_urgency_scores(engine, dpf, hydraulics, workorders):
+    """Silver → Gold urgency scoring — large join across all domains."""
+    ...</div>
+
+<h2>Debugging & Build Logs</h2>
+<table>
+  <tr><th>Where to Look</th><th>What You Find</th><th>Common Use</th></tr>
+  <tr><td><b>Dataset → Builds tab</b></td><td>Full build history — status, duration, compute used, triggered by</td><td>First stop for any pipeline failure</td></tr>
+  <tr><td><b>Build → Spark logs</b></td><td>Driver stdout/stderr, executor logs, Python print/logging output</td><td>Debugging transform logic errors, null handling, join fanout issues</td></tr>
+  <tr><td><b>Dataset → Checks tab</b></td><td>Expectations results after each build — pass/fail per check, with row counts</td><td>Verify data quality gates passed before downstream runs</td></tr>
+  <tr><td><b>Dataset → Preview</b></td><td>First 100 rows of the dataset after build</td><td>Quick sanity check on output shape, unit normalization, null rates</td></tr>
+  <tr><td><b>Lineage graph</b></td><td>Full upstream/downstream dependency graph — which datasets feed this one, which depend on it</td><td>Understand blast radius of a schema change; trace a bad value to its source</td></tr>
+  <tr><td><b>Code Repository → CI tab</b></td><td>Build validation results per commit — did the transform compile? Did unit tests pass?</td><td>Pre-merge validation before pushing to production branch</td></tr>
+</table>
+
+<h2>CI/CD Build Cycle</h2>
+<div class="object-box">Developer pushes branch to Foundry Code Repository
+        │
+        ▼
+Foundry CI triggers automatically
+  ├── Linting (flake8 / pylint)
+  ├── Unit tests (pytest — runs against synthetic DataFrames, not real datasets)
+  └── Compilation check (@transform_df decorators resolve correctly)
+        │
+        ▼
+Developer opens Pull Request in Foundry UI
+  └── Reviewer approves → merge to main branch
+        │
+        ▼
+Foundry production build triggers on main
+  ├── Builds all changed transforms
+  ├── Runs Expectations (data quality checks) on output
+  └── If Expectations pass → downstream transforms cascade automatically
+        │
+        ▼
+Foundry Checks alert on failure
+  └── PagerDuty / Slack notification via Foundry webhook integration</div>
+
+<h2>Code Workbook → Code Repository — Promotion Path</h2>
+<div class="section-intro">
+  Code Workbook is the exploration environment (Jupyter-like). It is <b>not</b> for production pipelines — it lacks versioning, CI, and Expectations enforcement. The correct workflow is: explore in Workbook, promote to Code Repository for production.
+</div>
+<table>
+  <tr><th>Step</th><th>Action</th><th>Notes</th></tr>
+  <tr><td>1</td><td>Explore in Code Workbook against real Bronze/Silver data</td><td>Fast iteration — no CI overhead. Use for prototyping transform logic, checking distributions, testing join keys.</td></tr>
+  <tr><td>2</td><td>Export Workbook cells to Code Repository (Foundry "Export" button)</td><td>Foundry exports notebook cells as flat Python. The exported code needs cleanup — remove exploratory print statements, reshape into proper <code>@transform_df</code> function.</td></tr>
+  <tr><td>3</td><td>Refactor into production transform function</td><td>Add <code>@transform_df</code> decorator, define named Inputs/Outputs, add Expectations, remove hardcoded dataset paths (use Foundry Input/Output references).</td></tr>
+  <tr><td>4</td><td>Write unit tests against synthetic DataFrames</td><td>Create a <code>tests/</code> directory in the repo. Use <code>pyspark.sql.SparkSession</code> to create test DataFrames. Test edge cases: nulls, duplicates, out-of-range values.</td></tr>
+  <tr><td>5</td><td>Open PR in Foundry → CI runs → merge to main</td><td>CI validates compilation + tests. After merge, Foundry schedules the transform based on its trigger configuration.</td></tr>
+</table>
+
+<!-- PIPELINE BUILDER DEEP DIVE -->
+<div class="page-break"></div>
+<h1>4. Pipeline Builder — Visual Transform Tool</h1>
+<div class="section-intro">
+  Pipeline Builder is Foundry's visual, no-code transform editor. You connect nodes to build a data pipeline. Each node is a discrete operation (filter, join, aggregate, etc.). Output is a Foundry dataset. No Spark code required — Foundry compiles the visual graph to a Spark execution plan at runtime.
+</div>
+
+<h2>Node Type Reference</h2>
+<table>
+  <tr><th>Node</th><th>What It Does</th><th>SQL Equivalent</th><th>When to Use in This Platform</th></tr>
+  <tr><td><b>Source</b></td><td>Reads a Foundry dataset as input to the pipeline</td><td><code>FROM</code></td><td>Every pipeline starts with at least one Source node</td></tr>
+  <tr><td><b>Filter</b></td><td>Drops rows that don't match a condition (column comparisons, null checks, regex)</td><td><code>WHERE</code></td><td>Quarantine routing — e.g., route rows where <code>mdm_resolved = false</code> to the quarantine dataset</td></tr>
+  <tr><td><b>Select / Rename</b></td><td>Choose which columns to keep; rename columns</td><td><code>SELECT col AS alias</code></td><td>Trim wide Bronze datasets before joining — reduces shuffle cost</td></tr>
+  <tr><td><b>Compute</b></td><td>Adds new columns using expressions — arithmetic, string functions, conditionals</td><td><code>SELECT ..., expr AS new_col</code></td><td>Simple derived columns: <code>wear_pct = engine_hours / oem_lifespan_hours * 100</code></td></tr>
+  <tr><td><b>Join</b></td><td>Inner / left / right / cross join between two datasets on a key</td><td><code>JOIN ... ON</code></td><td>Enrichment joins — Silver + MDM reference, Silver + OEM specs. Left join when right-side miss is acceptable (not for MDM key resolution).</td></tr>
+  <tr><td><b>Aggregate</b></td><td>GROUP BY — sum, count, avg, min, max, first, last</td><td><code>GROUP BY ... HAVING</code></td><td>Daily rollup of engine hours per machine; fault code frequency per domain</td></tr>
+  <tr><td><b>Union</b></td><td>Stack two datasets with matching schemas</td><td><code>UNION ALL</code></td><td>Combining multiple telemetry domains into one unified health dataset (e.g., merge Engine + DPF alerts into a single alert stream)</td></tr>
+  <tr><td><b>Deduplicate</b></td><td>Remove duplicate rows, keeping first or last by a sort key</td><td><code>ROW_NUMBER() OVER ... = 1</code></td><td>Bronze deduplication — Kafka at-least-once delivery produces duplicate events; dedup by <code>(machine_id, event_ts)</code></td></tr>
+  <tr><td><b>Sort</b></td><td>ORDER BY one or more columns</td><td><code>ORDER BY</code></td><td>Rarely used alone — sort before a "first" aggregation, or for output ordering</td></tr>
+  <tr><td><b>Output</b></td><td>Writes the pipeline result to a named Foundry dataset</td><td><code>INSERT INTO</code></td><td>Every pipeline ends with an Output node — defines the dataset path (e.g., <code>/silver/engine_quarantine</code>)</td></tr>
+</table>
+
+<h2>Pipeline Builder vs Code Repository — Decision Guide</h2>
+<table>
+  <tr><th>Use Pipeline Builder when…</th><th>Use Code Repository when…</th></tr>
+  <tr><td>The transform is a join + filter + select — under 5 nodes</td><td>The transform has conditional logic, window functions, or multi-step enrichment</td></tr>
+  <tr><td>A non-engineer (data analyst, product owner) needs to own and modify the pipeline</td><td>The pipeline is production-critical and needs unit tests, CI, and Expectations</td></tr>
+  <tr><td>Rapid prototyping — faster to wire nodes than write boilerplate code</td><td>The pipeline is incremental — needs to process only new partitions</td></tr>
+  <tr><td>The output feeds a Contour dashboard (BI/analytics use case)</td><td>The output feeds the Ontology or NBO Engine — business-critical correctness required</td></tr>
+  <tr><td>Simple quarantine routing (filter → two output nodes)</td><td>ML scoring, urgency calculation, or complex multi-domain aggregations</td></tr>
+</table>
+
+<h2>Visual Pipeline — Bronze → Silver Quarantine Routing</h2>
+<div class="object-box">┌─────────────────────────────────────────────────────────────────────┐
+│  Pipeline Builder — Bronze → Silver (Engine Domain)                 │
+└─────────────────────────────────────────────────────────────────────┘
+
+[Source: /bronze/engine_telemetry_raw]
+        │
+        ▼
+[Filter: machine_id IS NOT NULL]          ← drop structurally invalid rows
+        │
+        ▼
+[Deduplicate: on (machine_id, event_ts), keep latest]
+        │
+        ▼
+[Join (LEFT): + /reference/mdm_machine_registry  ON machine_id]
+        │
+        ├──[Filter: mdm_resolved = FALSE]──► [Output: /bronze/engine_quarantine]
+        │
+        └──[Filter: mdm_resolved = TRUE]
+                │
+                ▼
+        [Compute: coolant_temp_c = CASE WHEN temp_unit='F' THEN ...]
+                │
+                ▼
+        [Select: keep 22 canonical Silver fields, drop raw temp/pressure cols]
+                │
+                ▼
+        [Output: /silver/engine_telemetry_cleaned]</div>
+
+<h2>Scheduling & Trigger Modes</h2>
+<table>
+  <tr><th>Trigger Mode</th><th>How It Works</th><th>Used For</th></tr>
+  <tr><td><b>Dataset-triggered</b></td><td>Transform runs automatically when any upstream Input dataset is updated — Foundry monitors the upstream write event</td><td>Bronze → Silver transforms (trigger on Magritte Kafka ingestion completing); Silver → Gold (trigger on Silver build completing)</td></tr>
+  <tr><td><b>Schedule-triggered</b></td><td>Cron expression — runs at a fixed interval regardless of upstream state</td><td>MDM sync (runs daily at 4 AM regardless of upstream changes); NBO scoring (hourly batch)</td></tr>
+  <tr><td><b>Manual</b></td><td>Run on demand from the Foundry UI or via API</td><td>Backfill runs after fixing a bug; one-time data migration transforms</td></tr>
+  <tr><td><b>Cascading builds</b></td><td>When a transform completes successfully, Foundry automatically triggers all downstream transforms that depend on its output — the full DAG runs without manual intervention</td><td>End-to-end: Magritte ingestion → Bronze → Silver → Gold → Ontology population — all triggered by the first Kafka message arriving</td></tr>
+</table>
+
+<!-- SCHEMA CONTRACTS DEEP DIVE -->
+<div class="page-break"></div>
+<h1>5. Schema Contracts &amp; Data Quality Expectations</h1>
+<div class="section-intro">
+  Schema contracts are the formal agreements between teams on what a dataset must contain — field names, types, units, null rates, and value ranges. In this platform, the Data Modeling / Architecture team defines contracts for each Silver and Gold dataset. Data Engineering must produce Silver output that passes the contract before the Silver → Gold pipeline runs. Contracts are enforced via Foundry Expectations — code-level data quality checks that block downstream builds on failure.
+</div>
+
+<h2>What a Schema Contract Defines</h2>
+<table>
+  <tr><th>Contract Element</th><th>Example (Engine Silver)</th><th>Enforced By</th></tr>
+  <tr><td><b>Field names</b></td><td><code>machine_serial_number</code>, <code>event_ts</code>, <code>engine_hours</code>, <code>coolant_temp_c</code>, <code>oil_pressure_kpa</code></td><td>@transform_df output schema check at build time</td></tr>
+  <tr><td><b>Data types</b></td><td><code>serial_number: StringType</code>, <code>event_ts: TimestampType</code>, <code>engine_hours: DoubleType</code></td><td>Foundry schema validation on dataset write</td></tr>
+  <tr><td><b>Units (explicit)</b></td><td>Temperature in °C, pressure in kPa, hours as cumulative float — no mixed units permitted in Silver</td><td>Contract document + Expectation range checks</td></tr>
+  <tr><td><b>Null rates</b></td><td><code>serial_number</code>: 0% nulls (hard block); <code>engine_hours</code>: &lt; 1% nulls allowed; <code>fault_code</code>: nulls expected (no active fault = null)</td><td>Foundry Expectations (is_not_null, null_rate checks)</td></tr>
+  <tr><td><b>Value ranges</b></td><td>Engine hours: 0–50,000; Coolant temp: -40°C to 140°C; Oil pressure: 0–700 kPa</td><td>Foundry Expectations (between, greater_than checks)</td></tr>
+  <tr><td><b>Uniqueness</b></td><td>One row per <code>(serial_number, event_ts)</code> — no duplicates</td><td>Foundry Expectations (is_primary_key check)</td></tr>
+</table>
+
+<h2>Foundry Expectations — Code Implementation</h2>
+<div class="object-box">from transforms.api import transform_df, Input, Output
+from transforms.expectations import expectations, primary_key, column
+
+@expectations(
+    # Uniqueness: one row per machine per event timestamp
+    primary_key("serial_number", "event_ts"),
+
+    # Null rules: serial_number must never be null (hard block)
+    column("serial_number").is_not_null(),
+    column("event_ts").is_not_null(),
+
+    # Range checks: physical impossibility guards
+    column("engine_hours").between(0, 50_000),
+    column("coolant_temp_c").between(-40, 140),
+    column("oil_pressure_kpa").between(0, 700),
+
+    # Soft null check: less than 1% of rows may have null engine_hours
+    column("engine_hours").null_rate() < 0.01,
+
+    # Row count sanity: output must have at least 1,000 rows (catch empty-output bugs)
+    output.row_count() > 1_000,
+)
+@transform_df(
+    output=Output("/silver/engine_telemetry_cleaned"),
+    raw=Input("/bronze/engine_telemetry_raw"),
+    mdm=Input("/reference/mdm_machine_registry"),
+)
+def clean_engine_telemetry(raw, mdm):
+    ...</div>
+
+<h2>Expectation Failure Behaviour</h2>
+<table>
+  <tr><th>Failure Mode</th><th>What Foundry Does</th><th>Impact on Downstream</th></tr>
+  <tr><td><b>Hard block</b> (default)</td><td>Build fails, output dataset NOT written. Error surfaced in Checks tab.</td><td>All downstream transforms that depend on this dataset do NOT run — they stay on the previous good version.</td></tr>
+  <tr><td><b>Warn only</b> (configurable)</td><td>Build succeeds, output IS written. Warning visible in Checks tab.</td><td>Downstream runs normally but data quality warning is visible. Used for soft checks (null_rate slightly elevated) where the data is still usable.</td></tr>
+  <tr><td><b>Alert routing</b></td><td>Foundry fires a webhook on check failure → PagerDuty / Slack alert</td><td>On-call engineer receives P2 alert within 5 minutes of a Silver pipeline failing its Expectations (see Observability doc for routing rules).</td></tr>
+</table>
+
+<h2>Contract Versioning &amp; Breaking Changes</h2>
+<div class="section-intro">
+  Schema changes are treated as breaking if they remove a field, rename a field, change a type, or tighten a null constraint. Breaking changes require an Architecture Decision Record (ADR) and a migration plan before they can be merged.
+</div>
+<table>
+  <tr><th>Change Type</th><th>Breaking?</th><th>Process</th></tr>
+  <tr><td>Add a new nullable column</td><td>No</td><td>PR to Code Repo → CI → merge. Downstream transforms ignore unknown columns.</td></tr>
+  <tr><td>Rename a column</td><td>Yes</td><td>ADR required. Maintain old column name alongside new for one release cycle. Update all downstream transforms before removing old name.</td></tr>
+  <tr><td>Remove a column</td><td>Yes</td><td>ADR required. Confirm no downstream transform reads the column (check lineage graph). Two-step: deprecate (add warning), then remove.</td></tr>
+  <tr><td>Change a column type (e.g., String → Double)</td><td>Yes</td><td>ADR required. High-risk: Foundry Ontology object IDs must be stable — a type change on a primary key requires a full dataset reload and Ontology re-population.</td></tr>
+  <tr><td>Tighten a null constraint</td><td>Yes</td><td>Data Engineering must backfill historical data to meet the tighter constraint before the Expectation is deployed.</td></tr>
+  <tr><td>Change a value unit (e.g., °F → °C)</td><td>Yes</td><td>ADR required. All downstream consumers must be updated simultaneously — staged rollout not possible for unit changes.</td></tr>
+</table>
+
+<h2>Contract Governance — Who Owns What</h2>
+<table>
+  <tr><th>Team</th><th>Contract Responsibility</th></tr>
+  <tr><td><b>Data Modeling / Architecture</b></td><td>Authors the Silver and Gold schema contracts. Approves all breaking changes via ADR. Owns the Foundry Ontology schema.</td></tr>
+  <tr><td><b>Data Engineering</b></td><td>Implements Bronze → Silver transforms that must satisfy the Silver contract. Flags when source data makes a contract field impossible to meet (triggers a contract revision, not a silent violation).</td></tr>
+  <tr><td><b>NBO Engine / Portal team</b></td><td>Consumers of Gold datasets. Must not build against undocumented fields — only fields in the Gold contract are guaranteed stable. Reports contract violations to Data Modeling team, does not work around them.</td></tr>
+  <tr><td><b>Architecture team</b></td><td>Approves all ADRs for breaking schema changes. Owns the cross-team schema governance process.</td></tr>
+</table>
+
+<!-- SECTION 6 (formerly 3) -->
+<h1>6. Ontology Object Model</h1>
 <div class="section-intro">
   Palantir Foundry Ontology organizes data as business objects rather than raw tables. Each object has properties mapped from Gold layer datasets and relationships to other objects.
 </div>
