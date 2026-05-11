@@ -60,7 +60,7 @@
     <tr><td>Kafka → Bronze (Magritte)</td><td>99.5% of events land in Bronze within 60 seconds of emission</td><td>Kafka consumer lag metric + Foundry dataset last_updated_at</td><td>Alert if lag &gt; 300 events OR freshness &gt; 5 min for any domain</td></tr>
     <tr><td>Bronze → Silver transform</td><td>99% of Bronze partitions processed within 20 minutes of arrival</td><td>Pipeline job success rate + output dataset row count vs. input</td><td>Alert if Silver last_updated_at &gt; 30 min old</td></tr>
     <tr><td>Silver → Gold transform</td><td>99% of Silver input processed within 90 minutes (hourly schedule)</td><td>Gold dataset freshness per domain</td><td>Alert if Gold last_updated_at &gt; 105 minutes for Engine/DPF (critical domains); &gt; 2 hours for all other domains</td></tr>
-    <tr><td>MDM sync (Bronze reference)</td><td>MDM Bronze datasets updated within 2 hours of daily sync start</td><td>Magritte MDM connector last_run_at</td><td>Alert if MDM sync not completed by 6 AM local time</td></tr>
+    <tr><td>MDM sync (Bronze reference)</td><td>MDM Bronze datasets updated within 2 hours of daily sync start</td><td>Magritte MDM connector last_run_at</td><td>Alert if MDM sync not completed by 8 AM local time</td></tr>
     <tr><td>Streaming path (Engine/DPF → Ontology)</td><td>99.9% of critical fault events update Ontology within 90 seconds</td><td>Event emit timestamp → Ontology property updated_at delta</td><td>Alert if p99 latency &gt; 3 minutes</td></tr>
   </table>
 </div>

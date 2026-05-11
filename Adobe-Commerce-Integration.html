@@ -139,6 +139,9 @@
 <div class="note">
   <strong>Security:</strong> The <code>expires</code> timestamp limits link validity to 24 hours. The HMAC <code>sig</code> prevents parameter tampering (e.g., changing <code>customer_group</code> to get a better price tier). Adobe Commerce validates sig before creating the cart session.
 </div>
+<div class="note">
+  <strong>Design note — customer_group format:</strong> The deep link uses the string alias (<code>customer_group=FLEET_GOLD</code>) for human readability and easier debugging; Adobe Commerce resolves this to its internal numeric group ID at cart creation time. The pricing pre-fetch API call (Step 2) uses the numeric <code>customer_group_id=4</code> directly because the REST API requires it. Both refer to the same customer tier; the mapping is maintained in the Foundry Silver lookup table shown in the Pricing API section below.
+</div>
 
 <h3>NBO Payload to Member Portal (JSON)</h3>
 <pre>{
