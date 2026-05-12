@@ -1,6 +1,6 @@
-# CAT Principal Digital Architect — Interview Reference
+# Machine Telemetry - Reference Architecture 
 
-Architecture and data modeling reference documents for the Caterpillar Principal Digital Architect role (R0000365429).
+Architecture and data modeling reference documents for Machine Telemtry platform.
 
 ## Documents
 
