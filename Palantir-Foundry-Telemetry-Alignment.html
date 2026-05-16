@@ -77,6 +77,49 @@
   <tr><td><span class="layer-badge gold">GOLD</span></td><td>Business-Ready Layer</td><td>Aggregated, scored, and joined. What the portal, NBO/NBA engine and APIs consume directly.</td><td>/foundry/data/gold/{domain}_enriched</td></tr>
 </table>
 
+<div class="section-intro" style="margin-top:14px;">
+  <strong>Naming note — Bronze/Silver/Gold vs alternatives:</strong> The Bronze/Silver/Gold naming originates from Databricks' medallion architecture and is widely understood in data engineering. It is not mandated by Foundry — teams choose their own dataset path conventions. The table below shows equivalent naming patterns in use across the industry. The concept (and its three invariants) matters more than the label.
+</div>
+
+<table>
+  <tr>
+    <th style="width:20%">This Platform</th>
+    <th style="width:20%">Common Alternative</th>
+    <th style="width:20%">Warehouse / Zone</th>
+    <th style="width:20%">IoT / Industrial</th>
+    <th style="width:20%">Data Mesh</th>
+  </tr>
+  <tr>
+    <td><span class="layer-badge bronze">BRONZE</span></td>
+    <td>Raw</td>
+    <td>Landing / Staging</td>
+    <td>Raw / Ingested</td>
+    <td>Source</td>
+  </tr>
+  <tr>
+    <td><span class="layer-badge silver">SILVER</span></td>
+    <td>Refined / Cleansed</td>
+    <td>Core / Conformed</td>
+    <td>Validated / Standardized</td>
+    <td>Harmonized / Domain</td>
+  </tr>
+  <tr>
+    <td><span class="layer-badge gold">GOLD</span></td>
+    <td>Curated / Enriched</td>
+    <td>Mart / Published</td>
+    <td>Operational / Serving</td>
+    <td>Product / Consumption</td>
+  </tr>
+  <tr style="background:#f8f9fa;">
+    <td colspan="5" style="font-size:11px;color:#555;padding:8px 10px;">
+      <strong>The three invariants — regardless of naming:</strong>
+      &nbsp; Layer 1: immutable, full-fidelity, replayable (never transform here).
+      &nbsp; Layer 2: clean, MDM-resolved, unit-normalized, quarantine-routed (safe to query, not yet business-ready).
+      &nbsp; Layer 3: enriched, scored, aggregated, application-ready (what the Ontology and APIs consume directly).
+    </td>
+  </tr>
+</table>
+
 <h3>Data Flow</h3>
 <div class="object-box">
 [Machine Sensors / ECM]
