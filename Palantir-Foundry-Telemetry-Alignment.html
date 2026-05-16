@@ -120,6 +120,57 @@
   </tr>
 </table>
 
+<h3>Where Are the Layers Actually Stored — Foundry vs S3</h3>
+<div class="section-intro">
+  The short answer: <strong>inside Foundry, which physically stores on S3 underneath</strong>. Foundry manages its own dataset storage layer — you write to a Foundry dataset path, Foundry handles the physical storage in its own S3 bucket. You never interact with S3 directly.
+</div>
+
+<div class="object-box">Your Code Repository transform writes:
+  Output("/silver/engine_telemetry_cleaned")
+         │
+         ▼
+Foundry dataset service manages automatically:
+  ├─ Physical storage: Foundry-managed S3 bucket (not your bucket)
+  ├─ Format: Parquet files, columnar, Foundry-partitioned
+  ├─ Versioning: every write = new transaction; old versions retained (time travel)
+  └─ Lineage metadata: stored alongside the dataset automatically
+
+You never see or access:
+  s3://foundry-internal-bucket/datasets/ri.foundry.main.dataset.abc123/...
+  (Foundry's internal S3 paths are not exposed)</div>
+
+<table>
+  <tr><th>Question</th><th>Answer</th></tr>
+  <tr>
+    <td>Can I read Bronze files directly from S3?</td>
+    <td>No — Foundry's S3 paths are internal and not exposed. You query through Foundry transforms, APIs, or the Ontology only.</td>
+  </tr>
+  <tr>
+    <td>Can I use my own S3 bucket instead?</td>
+    <td>Yes — Foundry supports <strong>external datasets</strong> that point to your S3 bucket. Trade-off: Foundry does not manage versioning, lineage, or schema enforcement for external datasets. You own all of that.</td>
+  </tr>
+  <tr>
+    <td>What file format does Foundry use?</td>
+    <td>Parquet (columnar), partitioned. Foundry manages partitioning automatically based on dataset size and write patterns. You do not configure this.</td>
+  </tr>
+  <tr>
+    <td>How do I get Bronze/Silver/Gold data into another tool (e.g., Databricks, dbt)?</td>
+    <td>Two options: (1) write a Foundry pipeline that exports to an external S3 dataset your other tool can read; (2) use Foundry's Data Connection to sync to an external system. Neither is seamless — this is a meaningful integration cost.</td>
+  </tr>
+  <tr>
+    <td>Is there vendor lock-in on storage?</td>
+    <td>Yes — the dataset paths, transaction log, and versioning are Foundry-proprietary. If CAT migrates off Foundry, Bronze/Silver/Gold datasets don't port automatically. You would need to export everything to Parquet first, then rebuild lineage elsewhere. <strong>Delta Lake or Apache Iceberg on your own S3 bucket avoids this</strong> — same Parquet format, open transaction log, any engine can read it — but you lose Foundry's built-in lineage, versioning, and pipeline CI/CD.</td>
+  </tr>
+  <tr>
+    <td>How does this compare to Databricks / Delta Lake?</td>
+    <td>Delta Lake stores Parquet + an open-source transaction log (<code>_delta_log/</code>) in <em>your</em> S3 bucket. Any tool that understands Delta format can read it directly. Foundry's storage is equivalent in capability but proprietary in format — higher operational integration, higher lock-in.</td>
+  </tr>
+</table>
+
+<div class="section-intro" style="border-left-color:#e63946;background:#fff5f5;">
+  <strong>Lock-in decision for CAT:</strong> Using Foundry-managed storage (default) gives you full lineage, versioning, CI/CD, and Expectations enforcement with zero infrastructure management. The cost is proprietary storage that doesn't port. If CAT's architecture strategy requires data portability across platforms (e.g., Foundry + Databricks coexistence), the mitigation is to write Gold exports to an external Delta Lake dataset on CAT's own S3 — Foundry can write there, Databricks can read from there, and the Gold layer becomes the clean handoff point between platforms.
+</div>
+
 <h3>Data Flow</h3>
 <div class="object-box">
 [Machine Sensors / ECM]
