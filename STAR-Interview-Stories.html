@@ -48,6 +48,8 @@
 
 <div class="note" style="background:#eef8f5; border-left-color:#2a9d8f;">
   <strong>Background context for all stories:</strong> These stories draw from 10+ years of delivery experience as a Lead Solutions Architect at a systems integration (SI) partner, embedded at Northwestern Mutual across multiple enterprise data and digital programs. The SI partner context matters for framing: managing matrixed delivery teams of 20–30 people across client, vendor, and offshore workstreams is standard in SI delivery, not exceptional. When an interviewer asks about team size or program scale, acknowledge this context directly — "In SI delivery, coordinating teams of that size is the operating model, not the exception. My direct reports were [X]; the broader team I was technically accountable for was [24]." This sets accurate expectations and signals self-awareness. Do not undersell the experience, but do not let the HM build an inflated mental model that you'll need to walk back later.
+  <br><br>
+  <strong>NM → CAT parallel (use this in the HM interview):</strong> Northwestern Mutual operates through approximately 7,000 exclusive financial advisors — independent contractors who can only represent NM products, not competitors. They are NM's entire distribution channel. This is structurally identical to CAT's dealer network: ~3,500 independent dealer businesses that are aligned exclusively or primarily to CAT, and who represent CAT's brand to the end customer. In both cases, the digital platform only creates value if the channel partner adopts it — and you cannot mandate adoption from an independent business. The capability you built at NM (surfacing the right recommendation to an advisor at the right moment in a client relationship) is the same capability CAT needs (surfacing the right NBO to a dealer or fleet manager at the right moment in a machine's lifecycle). The domain is different. The adoption problem is identical.
 </div>
 
 <!-- ════════════════════════════════════
@@ -411,7 +413,7 @@
       <div class="star-content">
         <ul>
           <li><strong>Started by listening, not pitching:</strong> I asked the stakeholder to walk me through the previous platform investment that failed — what was promised, what was delivered, and at what point they knew it wasn't going to work. This was 45 minutes of listening. By the end, I understood that the failure pattern was: "Platform team was always 'almost ready' for 12 months, and when we finally got data, it was wrong." That was a data quality and transparency problem, not a platform capability problem.</li>
-          <li><strong>Redesigned the delivery to address their specific failure pattern:</strong> I proposed a "value milestone" structure instead of a project plan: the first milestone was not "platform ready" — it was "dealer receives a real fault alert for a real machine via the Member Portal within 90 days." That was the unit of trust I was asking them to extend. The second milestone came only after the first was validated. Platform investment was gated on business value delivery, not engineering completeness.</li>
+          <li><strong>Redesigned the delivery to address their specific failure pattern:</strong> I proposed a "value milestone" structure instead of a project plan: the first milestone was not "platform ready" — it was "an advisor uses a platform-generated recommendation in a real client conversation within 90 days." That was the unit of trust I was asking them to extend. The second milestone came only after the first was validated. Platform investment was gated on business value delivery, not engineering completeness.</li>
           <li><strong>Made data quality visible to the business stakeholder directly:</strong> I set up a monthly dashboard — not for the engineering team but for the business sponsor — showing Bronze→Silver null rates, quarantine rates, and Gold freshness. The explicit message: "You can see when our data is clean and when it isn't. I will not show you NBO recommendations built on data that hasn't passed quality gates." This was unprecedented — business stakeholders rarely see data quality metrics — and it reframed the conversation from "trust the platform team" to "verify the platform team."</li>
           <li><strong>Short-circuited the approval cycle:</strong> Rather than asking for full program approval upfront, I asked for 90-day approval to hit the first milestone. Full investment decision deferred until the milestone was delivered. This reduced the stakeholder's risk exposure and made "yes" much easier.</li>
         </ul>
@@ -586,6 +588,8 @@
       <div class="star-label t-label" style="background:#457b9d;">WHY CAT — not just any industrial company</div>
       <div class="star-content">
         CAT sits at a unique intersection: the physical asset (the machine), the dealer network (the distribution layer), and the digital platform (Cat Digital, Parts.cat.com, telematics). Most companies have one or two of those. CAT has all three at global scale, and they're all at an inflection point where data and digital capability is the differentiator. The Principal Digital Architect role here is one of the few places I can work on architecture that spans embedded systems, enterprise data platforms, and customer-facing commerce simultaneously. That combination doesn't exist in financial services.
+
+        There's also a direct structural parallel between NM and CAT that makes this transition more natural than it might look on paper. NM operates through approximately 7,000 exclusive financial advisors — independent business owners who can only represent NM products. CAT operates through ~3,500 exclusive dealer businesses aligned primarily to CAT. In both cases, the platform only creates value if an independent channel partner adopts it — and you cannot mandate that adoption. The work I did at NM — surfacing the right recommendation to an advisor at the right moment in a client relationship — is the same problem CAT needs to solve for dealers and fleet managers. I know how hard the adoption problem is, I know what makes channel partners choose to use a tool rather than route around it, and I've delivered a platform that moved that needle.
       </div>
     </div>
 
@@ -688,6 +692,107 @@
   <tr><td>Dodge the compensation question</td><td>HMs read dodging as unprepared or as a negotiating tactic that signals distrust. Know your number. Give a range if pressed. Don't anchor too low.</td></tr>
   <tr><td>Ask about work-life balance, remote work, or PTO in the first HM conversation</td><td>These are legitimate questions, but not in the first meeting. They shift the conversation from "what can I contribute" to "what do I get." Ask them in the offer stage.</td></tr>
 </table>
+
+<!-- ADDITIONAL HM PREP -->
+<div class="page-break"></div>
+<h1>Additional HM Prep — CAT-Specific</h1>
+
+<!-- CAT CULTURAL VOCABULARY -->
+<div class="story">
+  <div class="story-header">
+    <h2>CAT's Cultural Vocabulary — Use It Without Forcing It</h2>
+    <p>CAT measures leaders against 6 core values. HMs are trained to listen for them. You don't need to name-drop them — frame answers in the language naturally.</p>
+  </div>
+  <div class="story-body">
+    <table>
+      <tr><th style="width:18%">CAT Value</th><th style="width:42%">How it shows up in your stories</th><th>Natural language to use</th></tr>
+      <tr><td><strong>Quality</strong></td><td>Holding the Silver layer position — refusing to ship bad data because incorrect NBO recommendations would damage dealer trust in the platform</td><td>"Shipping wrong data would cost us credibility that takes months to rebuild." / "I wouldn't sign off on Gold data that hadn't passed quality gates."</td></tr>
+      <tr><td><strong>Commitment</strong></td><td>10 years embedded at NM; owning the architecture across all delivery phases, not just the design</td><td>"I stayed close to delivery because architecture that doesn't survive implementation isn't architecture — it's a slide deck."</td></tr>
+      <tr><td><strong>Teamwork</strong></td><td>1:1s before group sessions (Story 2); dependency board co-owned by all three teams; joint ADR sessions</td><td>"I ran 1:1s before the group session so nobody was blindsided." / "The dependency board was something all three teams owned, not something I maintained."</td></tr>
+      <tr><td><strong>Innovation</strong></td><td>Proposing parallel development instead of "no" on Silver (Story 3); milestone-gated delivery instead of project plan (Story 6)</td><td>"I didn't want to just say no — I wanted to find a path that addressed the schedule concern without compromising the architecture."</td></tr>
+      <tr><td><strong>Ethics</strong></td><td>Making data quality visible to the business sponsor (Story 6) — "I will not show you NBO recommendations built on data that hasn't passed quality gates"</td><td>"The stakeholder deserved to see the data quality picture, not just the output. Transparency was the only way to rebuild trust."</td></tr>
+      <tr><td><strong>Safety</strong></td><td>MDM quarantine design (Story 1) — building in the guardrail at the architecture level, not relying on downstream checks</td><td>"We quarantined at ingestion rather than cleaning up downstream — the cost of bad machine identity in an operational system is too high to catch late."</td></tr>
+    </table>
+  </div>
+</div>
+
+<!-- DEALER NETWORK MOAT -->
+<div class="story">
+  <div class="story-header">
+    <h2>The Dealer Network — Show You Understand CAT's Real Constraint</h2>
+    <p>CAT has ~3,500 dealers globally. Unlike most OEMs, CAT sells almost entirely through dealers, not direct. Digital capability only creates value if dealers adopt it. This is the exact problem you solved at NM with exclusive advisors.</p>
+  </div>
+  <div class="story-body">
+    <div class="star-section">
+      <div class="star-label s-label" style="background:#2a9d8f;">WHAT TO SAY IF ASKED ABOUT DEALER ADOPTION</div>
+      <div class="star-content">
+        "The hardest part of digital at CAT isn't building the platform — it's getting dealers to use it. Dealers are independent businesses. They adopt tools that make their service advisors faster and their parts counters more revenue, not tools that look impressive in demos. I've lived this problem at NM, where we were building platforms for 7,000 exclusive financial advisors who are independent contractors — same dynamic, different domain. The lesson I took: the platform has to deliver value in the first interaction, before you've asked for any behavior change. At NM, that meant the first advisor recommendation had to be obviously better than what the advisor would have done without it — not 'promising', not 'improving', obviously better. I'd apply the same standard to NBO at CAT: if a dealer's service writer looks at the recommendation and says 'I already knew that', we haven't built the right thing yet."
+      </div>
+    </div>
+    <div class="tips">
+      <strong>Why this works:</strong> You've named the real constraint (dealer adoption, not platform capability), you've drawn the NM ↔ CAT parallel credibly, and you've given a concrete quality bar — "obviously better, not promising" — that signals you understand what product-market fit means for a channel tool.
+    </div>
+  </div>
+</div>
+
+<!-- FAILURE STORY -->
+<div class="story">
+  <div class="story-header">
+    <h2>The Failure Story — Have One Ready</h2>
+    <p>HMs will ask for a genuine failure — not "what would you do differently" but a specific thing that went wrong. The worst answer is a humble-brag. The best answer is something genuinely your fault, caught by you, with a lasting behavior change.</p>
+  </div>
+  <div class="story-body">
+    <div class="star-section">
+      <div class="star-label s-label" style="background:#2a9d8f;">STRUCTURE TO USE</div>
+      <div class="star-content">
+        <ul>
+          <li><strong>Make it genuinely your fault</strong> — not circumstances, not another team, not the client. Something where you made a call that turned out to be wrong.</li>
+          <li><strong>Make it something you caught yourself</strong> — not a customer complaint, not a post-mortem finding. You noticed it, you owned it. This signals self-awareness.</li>
+          <li><strong>Make the behavior change specific and lasting</strong> — not "I learned to communicate better." What specifically do you do differently now that you didn't do before?</li>
+          <li><strong>Keep it proportionate</strong> — not a disaster that destroyed a program, not a trivial mistake. A decision that cost 2–4 weeks and had a real root cause in your judgment is the right scale.</li>
+        </ul>
+        <strong>Suggested frame (adapt to your actual experience):</strong><br><br>
+        <span class="fill">"[Early in the program / On the X project], I made a call to [proceed with X / skip Y / deprioritize Z] based on [my assumption / what I thought I knew]. What I didn't do was [validate that assumption with the team that owned it / check the downstream impact on X]. By the time we discovered the problem [X weeks later], we had [cost/impact]. I owned the decision — it was mine to make and I made it with incomplete information I could have gotten. What I changed: [specific practice you adopted — e.g., 'I now write the assumption explicitly in any ADR and ask the team most affected to sign off on it before I treat it as resolved.']. That practice has caught [X similar issues] since."]</span>
+      </div>
+    </div>
+    <div class="tips">
+      <strong>Delivery tips:</strong> The closing behavior change is the most important part. HMs are looking for learning agility and intellectual honesty. A candidate who says "I haven't really had a significant failure" has either never taken a real risk or isn't self-aware enough to see their failures. Both are disqualifying at the Principal level.
+    </div>
+  </div>
+</div>
+
+<!-- SALARY AND THE SAY NO QUESTION -->
+<div class="story">
+  <div class="story-header">
+    <h2>Compensation &amp; "What Would Make You Say No"</h2>
+    <p>Two questions HMs love that candidates routinely fumble.</p>
+  </div>
+  <div class="story-body">
+
+    <div class="star-section">
+      <div class="star-label s-label" style="background:#2a9d8f;">COMPENSATION</div>
+      <div class="star-content">
+        CAT Principal Digital Architect in Peoria / Chicago area: typically <strong>$170k–$210k base</strong> depending on level band and years of experience, plus bonus (typically 15–20% target at this level). With 10+ years of SI delivery experience at Principal level, do not anchor below <strong>$185k</strong>.
+
+        <br><br>If the HM asks first: give a range. "Based on my research and the scope of this role, I'm targeting $185k–$200k base — I'm open to discussing the full package including bonus structure." Do not volunteer a number below your actual target. Do not dodge with "I'm flexible" — it reads as unprepared.
+
+        <br><br>If they give you a number: don't accept or reject in the moment. "That's helpful context — can you tell me more about the bonus structure and how performance is measured at this level?" Buys time, signals professionalism.
+      </div>
+    </div>
+
+    <div class="star-section">
+      <div class="star-label t-label" style="background:#457b9d;">"WHAT WOULD MAKE YOU SAY NO TO THIS OFFER?"</div>
+      <div class="star-content">
+        Most candidates say "nothing, I really want this role" — which reads as desperate. The right answer shows self-awareness and standards without being arrogant.
+
+        <br><br><strong>What to say:</strong><br>
+        "If the role turns out to be primarily a governance and review function — where I'm reviewing other teams' decisions but not influencing them before they're made — I'd have to think carefully. I do my best work when I'm close enough to the architecture decisions that I can actually change outcomes, not just audit them after the fact. I'd also want to make sure there's a meaningful relationship with the dealer-facing product teams — if the Principal Digital Architect role is purely internal-IT-facing, I'd lose the business context that makes the architecture work. What's your sense of where those lines are drawn for this role?"
+
+        <br><br>That answer shows: (1) you have standards, (2) you know what you need to be effective, (3) you're not taking the job just for the title, and (4) you've turned it into a question that tells you something real about the role.
+      </div>
+    </div>
+  </div>
+</div>
 
 <br><br><hr>
 <p style="text-align:center;color:#999;font-size:11px;">STAR Interview Stories — CAT Principal Digital Architect &nbsp;|&nbsp; Harsh Shah &nbsp;|&nbsp; May 2026 &nbsp;|&nbsp; Confidential</p>
